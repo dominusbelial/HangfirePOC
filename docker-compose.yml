@@ -1,0 +1,34 @@
+version: "3.7"
+services:
+    #site exposed on http://localhost/jobs
+    #site exposed on http://localhost/home/getfiles gets current execution folder file list via webapi background job.
+    #site exposed on http://localhost/home/ creates simple backgroundjob in queue via webapi.
+    hangfire:
+        build: ./Hangfire
+        hostname: hangfireapi
+        restart: always
+        ports:
+            - "80:80"
+            - "443:443"
+        depends_on:
+            - hangfiredb
+    hangfiredb:
+        image: "mcr.microsoft.com/mssql/server"
+        hostname: hangfiredb
+        environment:
+            SA_PASSWORD: "Pass_abcd1234"
+            ACCEPT_EULA: "Y"
+        ports:
+            - "1433:1433"
+    #console app sleeps 20 seconds then creates backgroundjob from another execution context using hangfire.
+    console-client:
+        build: ./ConsoleClient
+        restart: always
+        depends_on:
+            - hangfire
+    #console app sleeps 20 seconds then creates Job on server via http call.
+    console-webapi:
+        build: ./ConsoleApiClient
+        restart: always
+        depends_on:
+            - hangfire            
